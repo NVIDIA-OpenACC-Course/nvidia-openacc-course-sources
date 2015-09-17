@@ -1,0 +1,7 @@
+*.o
+*.mod
+core
+cg
+laplace
+.*.swp
+*~
