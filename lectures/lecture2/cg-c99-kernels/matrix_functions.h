@@ -5,11 +5,11 @@
 void matvec(const matrix& A, const vector& x, const vector &y) {
 
   unsigned int num_rows=A.num_rows;
-  unsigned int *row_offsets=A.row_offsets;
-  unsigned int *cols=A.cols;
-  double *Acoefs=A.coefs;
-  double *xcoefs=x.coefs;
-  double *ycoefs=y.coefs;
+  unsigned int *restrict row_offsets=A.row_offsets;
+  unsigned int *restrict cols=A.cols;
+  double *restrict Acoefs=A.coefs;
+  double *restrict xcoefs=x.coefs;
+  double *restrict ycoefs=y.coefs;
 
   #pragma acc kernels
   {
