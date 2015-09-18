@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <cstdio>
+#include <omp.h>
 
 #include "vector.h"
 #include "vector_functions.h"
@@ -40,6 +41,7 @@ int main() {
   rtrans=dot(r,r);
   normr=sqrt(rtrans);
   
+  double st = omp_get_wtime();
   do {
     if(iter==0) {
       waxpby(one,r,zero,r,p);
@@ -64,8 +66,9 @@ int main() {
       printf("Iteration: %d, Tolerance: %.4e\n", iter, normr);
     iter++;
   } while(iter<MAX_ITERS && normr>TOL);
+  double et = omp_get_wtime();
 
-  printf("Total Iterations: %d\n", iter);
+  printf("Total Iterations: %d Total Time: %lfs\n", iter, (et-st));
 
   free_vector(x);
   free_vector(r);
