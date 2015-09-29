@@ -25,5 +25,6 @@ void initialize_vector(vector &v,double val) {
 
   for(int i=0;i<v.n;i++)
     v.coefs[i]=val;
+#pragma acc update device(v.coefs[:v.n])
 }
 
