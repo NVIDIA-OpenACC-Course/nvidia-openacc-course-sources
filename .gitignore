@@ -5,3 +5,5 @@ cg
 laplace
 .*.swp
 *~
+*.nvprof
+*.out

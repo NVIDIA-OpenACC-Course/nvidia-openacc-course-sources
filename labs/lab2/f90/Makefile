@@ -1,5 +1,5 @@
 FC=pgfortran
-FCFLAGS=-fast -ta=tesla:managed -Minfo=accel
+FCFLAGS=-fast
 
 cg: matrix.o vector.o main.F90
 	${FC} -o $@ ${FCFLAGS} main.F90 vector.o matrix.o
