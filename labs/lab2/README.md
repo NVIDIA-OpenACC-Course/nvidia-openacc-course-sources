@@ -85,6 +85,24 @@ carried dependency."
 
 Step 3 - Re-Profile Application
 -------------------------------
+Once you have added the OpenACC directives to your code, you should obtain a
+new profile of the application. For this step, use the NVIDIA Visual Profiler
+to obtain a GPU timeline and see how the the GPU computation and data movement
+from CUDA Unified Memory interact. 
+
+- If you are doing this lab via NVIDIA qwiklabs, launch Visual Profiler by  MARK FIX THIS.
+- If you are doing this lab on your own machine, either launch Visual Profiler
+  from its application link or via the `nvvp` command.
+
+Once Visual Profiler has started, create a new session by selecting *File -> New
+Session*. Then select the executable that you built by pressing the *Browse*
+button next to *File* and then press *Next*. On the next screen ensure that
+*Enable unified memory profiling* is checked and press *Finish*. The result
+should look like the image below. Experiment with Visual Profiler to see what
+information you can learn from it.
+
+![Image of NVIDIA Visual Profiler after completing lab 2 with the kernels
+directive](./visual_profiler_lab2.png)
 
 Conclusion
 ----------
