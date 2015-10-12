@@ -112,10 +112,7 @@ verify this by removing the `-ta` flag from your compiler options.
 
 Bonus
 -----
-1. Rebuild the application replacing `ta=tesla:managed` with `-ta=multicore`.
-This will change the target accelerator from the GPU to the multicore CPU. Does
-the code speed-up over the original by using CPU parallelism as well?
-2. If you used the `kernels` directive to express the parallelism in the code,
+1. If you used the `kernels` directive to express the parallelism in the code,
 try again with the `parallel loop` directive. Remember, you will need to take
 responsibility of identifying any reductions in the code. If you used 
 `parallel loop`, try using `kernels` instead and observe the differences both in
