@@ -3,7 +3,7 @@ NVIDIA OpenACC Course - Lab 2
 
 In this lab you will profile the provided application using either NVIDIA
 nvprof or gprof and the PGI compiler. After profiling the application, you will
-use OpenACC to express the parallelism in the 3 most time-consumining routines.
+use OpenACC to express the parallelism in the 3 most time-consuming routines.
 You will use CUDA Unified Memory and the PGI "managed" option to manage host
 and device memories for you. You may use either the `kernels` or `parallel loop` 
 directives to express the parallelism in the code. Versions of the code
@@ -107,7 +107,7 @@ directive](./visual_profiler_lab2.png)
 Conclusion
 ----------
 After completing the above steps for each of the 3 important routines your
-application should show a speed-up over the unaccelerated version. You an
+application should show a speed-up over the unaccelerated version. You can
 verify this by removing the `-ta` flag from your compiler options. 
 
 Bonus
