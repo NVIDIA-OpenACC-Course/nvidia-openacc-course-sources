@@ -7,7 +7,9 @@ use OpenACC to express the parallelism in the 3 most time-consuming routines.
 You will use CUDA Unified Memory and the PGI "managed" option to manage host
 and device memories for you. You may use either the `kernels` or `parallel loop` 
 directives to express the parallelism in the code. Versions of the code
-have been provided in C99 and Fortran 90.
+have been provided in C99 and Fortran 90. The C99 version is available in the
+`lab2/c99` directory and the F90 version is available in the `lab2/f90`
+directory.
 
 **Hint** You should repeat steps 2 and 3 for each function identified in step 1
 in order of function importance. Gather a new GPU profile each time and observe
@@ -18,7 +20,9 @@ Step 1 - Identify Parallelism
 In this step, use the NVPROF profiler, or your preferred performance analysis
 tool, to idetify the important routines in the application and examine the
 loops within these routines to determine whether they are candidates for
-acceleration.
+acceleration. A Makefile has been provided for building the sample executable.
+Change directory to the lab 2 language of your choice (`cd lab2/c99` or `cd
+lab2/f90`) and run the `make` command to build the executable.
 
     $ nvprof --cpu-profiling on --cpu-profiling-mode top-down ./cg
     Rows: 8120601, nnz: 218535025
@@ -54,14 +58,15 @@ Step 2 - Express Parallelism
 Within each of the routines identified above, express the available parallelism
 to the compiler using either the `acc kernels` or `acc parallel loop`
 directive. Add the necessary directives to each routine one at a time in order
-of importance. After adding the directive, recompile the code, check that the
-answers have remained the same, and note the performance difference from your
-change. The performance may slow down as you're working on this step. Be sure
-to read the compiler feedback to understand how the compiler parallelizes the
-code for you. If you are doing the C/C++ lab, it may be necessary to declare
-some pointers as `restrict` in order for the compiler to parallelize them. You
-will know if this is necessary if the compiler feedback lists a "complex loop
-carried dependency."
+of importance  and modify the Makefile to enable OpenACC compilation. After
+adding the directive, recompile the code, check that the answers have remained
+the same, and note the performance difference from your change. The performance
+may slow down as you're working on this step. Be sure to read the compiler
+feedback to understand how the compiler parallelizes the code for you. If you
+are doing the C/C++ lab, it may be necessary to declare some pointers as
+`restrict` in order for the compiler to parallelize them. You will know if this
+is necessary if the compiler feedback lists a "complex loop carried
+dependency."
 
     $ make
     pgc++ -fast -acc -ta=tesla:managed -Minfo=accel main.cpp -o cg
