@@ -62,11 +62,14 @@ of importance  and modify the Makefile to enable OpenACC compilation. After
 adding the directive, recompile the code, check that the answers have remained
 the same, and note the performance difference from your change. The performance
 may slow down as you're working on this step. Be sure to read the compiler
-feedback to understand how the compiler parallelizes the code for you. If you
-are doing the C/C++ lab, it may be necessary to declare some pointers as
-`restrict` in order for the compiler to parallelize them. You will know if this
-is necessary if the compiler feedback lists a "complex loop carried
-dependency."
+feedback to understand how the compiler parallelizes the code for you.  As a
+bonus, perform step 3 after accelerating each important routine to visualize
+why the performance changed in the way that it did.
+
+***NOTE:*** If you are doing the C/C++ lab, it may be necessary to declare some
+pointers as `restrict` in order for the compiler to parallelize them. You will
+know if this is necessary if the compiler feedback lists a "complex loop
+carried dependency."
 
     $ make
     pgc++ -fast -acc -ta=tesla:managed -Minfo=accel main.cpp -o cg
