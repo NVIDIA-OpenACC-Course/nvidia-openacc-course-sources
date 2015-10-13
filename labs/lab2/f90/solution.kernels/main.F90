@@ -1,6 +1,7 @@
 program main
   use vector_mod
   use matrix_mod
+  use omp_lib ! Used for timing
   implicit none
   real(8), allocatable :: x(:), b(:), r(:), p(:), Ap(:)
   type(matrix)         :: a
@@ -11,6 +12,7 @@ program main
                           max_iters=100 
   real(8)              :: normr, rtrans, oldtrans, p_ap_dot, alpha, beta
   integer              :: iter
+  real                 :: st, et
 
   call allocate_3d_poission_matrix(a,n)
 
@@ -33,6 +35,7 @@ program main
   normr=sqrt(rtrans)
 
   iter = 0
+  st = omp_get_wtime()
   do while((iter.lt.max_iters).and.(normr.gt.tol)) 
     if(iter.eq.0) then
       call waxpby(one,r,zero,r,p)
@@ -58,8 +61,9 @@ program main
     endif
     iter = iter + 1
   enddo
+  et = omp_get_wtime()
 
-  print *,"Total Iterations:",iter
+  print *,"Total Iterations:",iter,"Time (s):",(et-st)
   
   call free_vector(x)
   call free_vector(ap)
