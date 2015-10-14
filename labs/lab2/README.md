@@ -8,21 +8,50 @@ You will use CUDA Unified Memory and the PGI "managed" option to manage host
 and device memories for you. You may use either the `kernels` or `parallel loop` 
 directives to express the parallelism in the code. Versions of the code
 have been provided in C99 and Fortran 90. The C99 version is available in the
-`lab2/c99` directory and the F90 version is available in the `lab2/f90`
-directory.
+c99` directory and the F90 version is available in the `f90` directory.
+
+![Lecture 2 steps: Identify and Express Parallelism](Lecture_2_Steps.png)
+
+As discussed in the associated lecture, this lab will focus solely on
+Identifying Parallelism in the code by profiling the application and Expressing
+Parallelism using OpenACC. We will use CUDA Unified Memory to allow the data
+used on the GPU to be automatically migrated too and from the GPU as needed.
+Please be aware that you may see an application slowdown until you have
+completed each step of this lab. This is expected behavior due to the need to
+migrate data between the CPU and GPU memories.
 
 **Hint** You should repeat steps 2 and 3 for each function identified in step 1
 in order of function importance. Gather a new GPU profile each time and observe
 how the profile changes after each step.
+
+Step 0 - Building the code
+--------------------------
+
+Makefiles have been provided for building both the C and Fortran versions of
+the code. Change directory to your language of choice and run the `make`
+command to build the code.
+
+### C/C++
+
+    $ cd c99/
+    $ make
+        
+### Fortran
+
+    $ cd f90/
+    $ make
+                
+This will build an executable named `cg` that you can run with the `./cg`
+command. You may change the options passed to the compiler by modifying the
+`CFLAGS` variable in `c99/Makefile` or `FCFLAGS` in `f90/Makefile`. You should
+not need to modify anything in the Makefile except these compiler flags.
 
 Step 1 - Identify Parallelism
 -----------------------------
 In this step, use the NVPROF profiler, or your preferred performance analysis
 tool, to idetify the important routines in the application and examine the
 loops within these routines to determine whether they are candidates for
-acceleration. A Makefile has been provided for building the sample executable.
-Change directory to the lab 2 language of your choice (`cd lab2/c99` or `cd
-lab2/f90`) and run the `make` command to build the executable.
+acceleration. Run the command below to gather a CPU profile.
 
     $ nvprof --cpu-profiling on --cpu-profiling-mode top-down ./cg
     Rows: 8120601, nnz: 218535025
@@ -50,6 +79,10 @@ lab2/f90`) and run the `make` command to build the executable.
     
     ======== Data collected at 100Hz frequency
 
+We see from the above output that the `matvec`, `waxpy`, and `dot` routines
+take up the majority of the runtime of this application. We will focus our
+effort on accelerating these functions.
+
 ***NOTE:*** The `allocate_3d_poission_matrix` routine is an initialization
 routine that can be safely ignored.
 
@@ -57,19 +90,41 @@ Step 2 - Express Parallelism
 -----------------------------
 Within each of the routines identified above, express the available parallelism
 to the compiler using either the `acc kernels` or `acc parallel loop`
-directive. Add the necessary directives to each routine one at a time in order
-of importance  and modify the Makefile to enable OpenACC compilation. After
-adding the directive, recompile the code, check that the answers have remained
-the same, and note the performance difference from your change. The performance
-may slow down as you're working on this step. Be sure to read the compiler
-feedback to understand how the compiler parallelizes the code for you.  As a
-bonus, perform step 3 after accelerating each important routine to visualize
-why the performance changed in the way that it did.
+directive. As an example, here's the OpenACC code to add to the `matvec`
+routine.
 
-***NOTE:*** If you are doing the C/C++ lab, it may be necessary to declare some
-pointers as `restrict` in order for the compiler to parallelize them. You will
-know if this is necessary if the compiler feedback lists a "complex loop
-carried dependency."
+    void matvec(const matrix& A, const vector& x, const vector &y) {
+    
+      unsigned int num_rows=A.num_rows;
+      unsigned int *restrict row_offsets=A.row_offsets;
+      unsigned int *restrict cols=A.cols;
+      double *restrict Acoefs=A.coefs;
+      double *restrict xcoefs=x.coefs;
+      double *restrict ycoefs=y.coefs;
+    
+    #pragma acc kernels
+      {
+        for(int i=0;i<num_rows;i++) {
+          double sum=0;
+          int row_start=row_offsets[i];
+          int row_end=row_offsets[i+1];
+          for(int j=row_start;j<row_end;j++) {
+            unsigned int Acol=cols[j];
+            double Acoef=Acoefs[j];
+            double xcoef=xcoefs[Acol];
+            sum+=Acoef*xcoef;
+          }
+          ycoefs[i]=sum;
+        }
+      }
+    }
+
+
+Add the necessary directives 
+to each routine one at a time in order
+of importance. After adding the directive, recompile the code, check that the
+answers have remained the same, and note the performance difference from your
+change.
 
     $ make
     pgc++ -fast -acc -ta=tesla:managed -Minfo=accel main.cpp -o cg
@@ -86,9 +141,15 @@ carried dependency."
               16, Loop is parallelizable
                   Accelerator kernel generated
                   Generating Tesla code
-                  16, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x
-    */
+                  16, #pragma acc loop gang, vector(128) /* blockIdx.x threadIdx.x */
               20, Loop is parallelizable
+              
+The performance may slow down as you're working on this step. Be sure
+to read the compiler feedback to understand how the compiler parallelizes the
+code for you. If you are doing the C/C++ lab, it may be necessary to declare
+some pointers as `restrict` in order for the compiler to parallelize them. You
+will know if this is necessary if the compiler feedback lists a "complex loop
+carried dependency."
 
 
 Step 3 - Re-Profile Application
@@ -98,13 +159,13 @@ new profile of the application. For this step, use the NVIDIA Visual Profiler
 to obtain a GPU timeline and see how the the GPU computation and data movement
 from CUDA Unified Memory interact. 
 
-- If you are doing this lab via NVIDIA qwiklabs, launch Visual Profiler by  MARK FIX THIS.
 - If you are doing this lab on your own machine, either launch Visual Profiler
   from its application link or via the `nvvp` command.
 
 Once Visual Profiler has started, create a new session by selecting *File -> New
 Session*. Then select the executable that you built by pressing the *Browse*
-button next to *File* and then press *Next*. On the next screen ensure that
+button next to *File*, browse to your working directory, select the `cg`
+executable, and then press *Next*. On the next screen ensure that
 *Enable unified memory profiling* is checked and press *Finish*. The result
 should look like the image below. Experiment with Visual Profiler to see what
 information you can learn from it.
@@ -116,7 +177,10 @@ Conclusion
 ----------
 After completing the above steps for each of the 3 important routines your
 application should show a speed-up over the unaccelerated version. You can
-verify this by removing the `-ta` flag from your compiler options. 
+verify this by removing the `-ta` flag from your compiler options. In the next
+lecture and lab we will replace CUDA Unified Memory with explicit memory
+management using OpenACC and then further optimize the loops using the OpenACC
+loop directive.
 
 Bonus
 -----
