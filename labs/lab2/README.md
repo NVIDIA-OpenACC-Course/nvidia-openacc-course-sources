@@ -8,14 +8,14 @@ You will use CUDA Unified Memory and the PGI "managed" option to manage host
 and device memories for you. You may use either the `kernels` or `parallel loop` 
 directives to express the parallelism in the code. Versions of the code
 have been provided in C99 and Fortran 90. The C99 version is available in the
-c99` directory and the F90 version is available in the `f90` directory.
+`c99` directory and the F90 version is available in the `f90` directory.
 
 ![Lecture 2 steps: Identify and Express Parallelism](Lecture_2_Steps.png)
 
 As discussed in the associated lecture, this lab will focus solely on
 Identifying Parallelism in the code by profiling the application and Expressing
 Parallelism using OpenACC. We will use CUDA Unified Memory to allow the data
-used on the GPU to be automatically migrated too and from the GPU as needed.
+used on the GPU to be automatically migrated to and from the GPU as needed.
 Please be aware that you may see an application slowdown until you have
 completed each step of this lab. This is expected behavior due to the need to
 migrate data between the CPU and GPU memories.
