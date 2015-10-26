@@ -11,12 +11,12 @@ void matvec(const matrix& A, const vector& x, const vector &y) {
   double *restrict xcoefs=x.coefs;
   double *restrict ycoefs=y.coefs;
 
-#pragma acc parallel loop gang worker vector_length(32) num_workers(32) present(row_offsets,cols,Acoefs,xcoefs,ycoefs)
+#pragma acc parallel loop present(row_offsets,cols,Acoefs,xcoefs,ycoefs) device_type(nvidia) gang worker vector_length(32) num_workers(32)
   for(int i=0;i<num_rows;i++) {
     double sum=0;
     int row_start=row_offsets[i];
     int row_end=row_offsets[i+1];
-#pragma acc loop reduction(+:sum) vector
+#pragma acc loop reduction(+:sum) device_type(nvidia) vector
     for(int j=row_start;j<row_end;j++) {
       unsigned int Acol=cols[j];
       double Acoef=Acoefs[j];
