@@ -7,9 +7,8 @@ module vector_mod
     implicit none
     real(8), intent(out) :: vector(:)
     real(8), intent(in)  :: value
-    !$acc kernels present(vector)
     vector(:) = value
-    !$acc end kernels
+    !$acc update device(vector)
   end subroutine
   subroutine allocate_vector(vector,length)
     implicit none
