@@ -148,7 +148,7 @@ to the end of `initialize_vector`.
 Now that we have the correct input data on the device the code should run
 correctly once again.
 
---
+---
 
 (NOTE for C/C++ and Fortran: One could also parallelize the loop in
 `initialize_vector` on the GPU, but we choose to use the `update` directive
@@ -156,9 +156,116 @@ here to illustrate how this directive is used.)
 
 Step 2 - Profile The Application
 --------------------------------
+Just as in the last lab, we'll use the NVIDIA Visual Profiler to profile our
+application. 
+
+PASTE INSTRUCTIONS TO OPEN NVVP
+
+Once you've opened Visual Profiler, go to File and then New Session. 
+
+In the lower left, press the "Examine GPU Usage" button.
 
 Step 3 - Optimize Loops
 -----------------------
+Given that the analysis above shows poor resource utilization, let's apply our
+knowledge of the code to help the compiler make better decisions about how to
+parallelize our loops. We know from the `allocate_3d_poission_matrix` routine
+that the most non-zero elements we'll have per row is 27. This means that with
+the compiler-selected vector length of 128, 101 vector lanes (threads) will go
+unused. Let's tell the compiler to choose a better vector length for these
+loops. 
+
+On an NVIDIA GPU the vector length must be a multiple of the *warp size* of the
+GPU, which on all NVIDIA GPUs to-date is 32. This means that the closest vector
+length we can choose is 32. Depending on whether the code uses `kernels` or 
+`parallel loop`, we can specify the vector length one of two ways.
+
+### Kernels
+When using the `kernels` directive, the vector length is given by adding
+`kernels(32)` to the loop we want to use as the `vector` loop. So for our
+`matvec` loops, we'd apply the vector length as shown below.
+
+#### C/C++
+    #pragma acc kernels present(row_offsets,cols,Acoefs,xcoefs,ycoefs)
+      {
+    #pragma acc loop 
+        for(int i=0;i<num_rows;i++) {
+          double sum=0;
+          int row_start=row_offsets[i];
+          int row_end=row_offsets[i+1];
+          #pragma acc loop device_type(nvidia) vector(32)
+          for(int j=row_start;j<row_end;j++) {
+            unsigned int Acol=cols[j];
+            double Acoef=Acoefs[j];
+            double xcoef=xcoefs[Acol];
+            sum+=Acoef*xcoef;
+          }
+          ycoefs[i]=sum;
+        }
+      }
+
+#### Fortran
+    !$acc kernels present(arow_offsets,acols,acoefs,x,y)
+    do i=1,a%num_rows
+      tmpsum = 0.0d0
+      row_start = arow_offsets(i)
+      row_end   = arow_offsets(i+1)-1
+      !$acc loop device_type(nvidia) vector(32)
+      do j=row_start,row_end
+        acol = acols(j)
+        acoef = acoefs(j)
+        xcoef = x(acol)
+        tmpsum = tmpsum + acoef*xcoef
+      enddo
+      y(i) = tmpsum
+    enddo
+    !$acc end kernels
+
+### Parallel Loop
+When using `parallel loop` the vector length is given at the top of the loop,
+as shown below.
+
+#### C/C++
+    #pragma acc parallel loop present(row_offsets,cols,Acoefs,xcoefs,ycoefs) \
+            device_type(nvidia) vector_length(32)
+      for(int i=0;i<num_rows;i++) {
+        double sum=0;
+        int row_start=row_offsets[i];
+        int row_end=row_offsets[i+1];
+    #pragma acc loop reduction(+:sum) device_type(nvidia) vector
+        for(int j=row_start;j<row_end;j++) {
+          unsigned int Acol=cols[j];
+          double Acoef=Acoefs[j];
+          double xcoef=xcoefs[Acol];
+          sum+=Acoef*xcoef;
+        }
+        ycoefs[i]=sum;
+      }
+
+#### Fortran
+    !$acc parallel loop private(tmpsum,row_start,row_end) &
+    !$acc& present(arow_offsets,acols,acoefs,x,y)         &
+    !$acc& device_type(nvidia) vector_length(32)
+    do i=1,a%num_rows
+      tmpsum = 0.0d0
+      row_start = arow_offsets(i)
+      row_end   = arow_offsets(i+1)-1
+      !$acc loop reduction(+:tmpsum) device_type(nvidia) vector
+      do j=row_start,row_end
+        acol = acols(j)
+        acoef = acoefs(j)
+        xcoef = x(acol)
+        tmpsum = tmpsum + acoef*xcoef
+      enddo
+      y(i) = tmpsum
+    enddo
+
+---
+
+Notice that the above code adds the `device_type(nvidia)` clause to the
+affected loops. Because we only want this optimization to be applied to NVIDIA
+GPUs, we've protected that optimization with a `device_type` clause and allowed
+the compiler to determine the best value on other platforms.
 
 Conclusion
 ----------
