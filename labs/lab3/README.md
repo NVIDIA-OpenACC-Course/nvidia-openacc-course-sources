@@ -159,11 +159,24 @@ Step 2 - Profile The Application
 Just as in the last lab, we'll use the NVIDIA Visual Profiler to profile our
 application. 
 
-PASTE INSTRUCTIONS TO OPEN NVVP
+- If you are doing this lab on your own machine, either launch Visual Profiler
+  from its application link or via the `nvvp` command.
 
-Once you've opened Visual Profiler, go to File and then New Session. 
+Once Visual Profiler has started, create a new session by selecting *File -> New
+Session*. Then select the executable that you built by pressing the *Browse*
+button next to *File*, browse to your working directory, select the `cg`
+executable, and then press *Next*. On the next screen press *Finish*. Visual
+Profiler will run for several seconds to collect a GPU timeline and begin its
+*guided analysis*.
 
-In the lower left, press the "Examine GPU Usage" button.
+In the lower left, press the "Examine GPU Usage" button. You may need to
+enlarge the bottom panel of the screen by grabbing just below the horizontal
+scroll bar at the middle of the window and dragging it up until the button is
+visial. After this runs, click on "Examine Individual Kernels" and select the
+top kernel in the table. After selecting the top kernel, press the "Perform
+Kernel Analysis" button to gather further performance information about this
+kernel and wait while Visual Profiler collects additional data (this make take
+several seconds). When this completes, press "Perform Latency Analysis".
 
 Step 3 - Optimize Loops
 -----------------------
@@ -265,7 +278,118 @@ as shown below.
 Notice that the above code adds the `device_type(nvidia)` clause to the
 affected loops. Because we only want this optimization to be applied to NVIDIA
 GPUs, we've protected that optimization with a `device_type` clause and allowed
-the compiler to determine the best value on other platforms.
+the compiler to determine the best value on other platforms. Now that we've
+adjusted the vector length to fit the problem, let's profile the code again to
+see how well it's performing. If you're using the `kernels` directive, you may
+see a small slowdown in performance, but if you're using the `parallel loop`
+approach you will likely see a performance improvement. Using Visual Profiler,
+let's see if we can find a way to further improve performance.
+
+VISUAL PROFILER INFORMATION
+
+To increase the parallelism in each OpenACC gang, we'll use the worker level of
+parallelism to operate on multiple vectors within each gang. On an NVIDIA GPU
+the *vector length X number of workers* must be a multiple of 32 and no larger
+than 1024, so let's experiment with increasing the number of workers. From just
+1 worker up to 32. We want the outermost look to be divided among gangs and
+workers, so we'll specify that it is an gang *and* worker loop. By only
+specifying the number of workers, we allow the compiler to generate enough
+gangs to use up the rest of the loop iterations.
+
+### Kernels
+When using the `kernels` directive, use the `loop` directive to specify that
+the outer loop should be a *gang* and *worker* loop with 32 workers as shown
+below.
+
+#### C/C++
+    #pragma acc kernels present(row_offsets,cols,Acoefs,xcoefs,ycoefs)
+      {
+    #pragma acc loop device_type(nvidia) gang worker(32)
+        for(int i=0;i<num_rows;i++) {
+          double sum=0;
+          int row_start=row_offsets[i];
+          int row_end=row_offsets[i+1];
+          #pragma acc loop device_type(nvidia) vector(32)
+          for(int j=row_start;j<row_end;j++) {
+            unsigned int Acol=cols[j];
+            double Acoef=Acoefs[j];
+            double xcoef=xcoefs[Acol];
+            sum+=Acoef*xcoef;
+          }
+          ycoefs[i]=sum;
+        }
+      }
+
+
+#### Fortran
+    !$acc kernels present(arow_offsets,acols,acoefs,x,y)
+    !$acc loop device_type(nvidia) gang worker(32)
+    do i=1,a%num_rows
+      tmpsum = 0.0d0
+      row_start = arow_offsets(i)
+      row_end   = arow_offsets(i+1)-1
+      !$acc loop device_type(nvidia) vector(32)
+      do j=row_start,row_end
+        acol = acols(j)
+        acoef = acoefs(j)
+        xcoef = x(acol)
+        tmpsum = tmpsum + acoef*xcoef
+      enddo
+      y(i) = tmpsum
+    enddo
+    !$acc end kernels
+
+
+### Parallel Loop
+When using the `parallel loop` directive, use `gang` and `worker` to specify
+that the outer loop should be a *gang* and *worker* loop and then add
+`num_workers(32)` to specify 32 workers, as shown below.
+
+#### C/C++
+    #pragma acc parallel loop present(row_offsets,cols,Acoefs,xcoefs,ycoefs) \
+            device_type(nvidia) gang worker vector_length(32) num_workers(32)
+      for(int i=0;i<num_rows;i++) {
+        double sum=0;
+        int row_start=row_offsets[i];
+        int row_end=row_offsets[i+1];
+    #pragma acc loop reduction(+:sum) device_type(nvidia) vector
+        for(int j=row_start;j<row_end;j++) {
+          unsigned int Acol=cols[j];
+          double Acoef=Acoefs[j];
+          double xcoef=xcoefs[Acol];
+          sum+=Acoef*xcoef;
+        }
+        ycoefs[i]=sum;
+      }
+
+#### Fortran
+    !$acc parallel loop private(tmpsum,row_start,row_end) &
+    !$acc& present(arow_offsets,acols,acoefs,x,y)         &
+    !$acc& device_type(nvidia) gang worker num_workers(32) vector_length(32)
+    do i=1,a%num_rows
+      tmpsum = 0.0d0
+      row_start = arow_offsets(i)
+      row_end   = arow_offsets(i+1)-1
+      !$acc loop reduction(+:tmpsum) device_type(nvidia) vector
+      do j=row_start,row_end
+        acol = acols(j)
+        acoef = acoefs(j)
+        xcoef = x(acol)
+        tmpsum = tmpsum + acoef*xcoef
+      enddo
+      y(i) = tmpsum
+    enddo
+
 
 Conclusion
 ----------
+In this lab we started with a code that relied on CUDA Unified Memory to handle
+data movement and added explicit OpenACC data locality directives. This makes
+the code portable to any OpenACC compiler and accelerators that may not have
+Unified Memory. We used both the unstructured data directives and the `update`
+directive to achieve this.
+
+Next we profiled the code to determine how it could run more efficiently on the
+GPU we're using. We used our knowledge of both the application and the hardware
+to find a loop mapping that ran well on the GPU, achieving a 2-4X speed-up over
+our starting code.
