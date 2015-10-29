@@ -356,7 +356,7 @@ Scrolling further down in the *Results* section we reach the *Block Limit*
 metric, which will be highlighted in red. This is shown in the screenshot
 below.
 
-![NVIDIA Visual Profiler Occupancy Screenshot](files/lab3-nvvp-occupancy.png)
+![NVIDIA Visual Profiler Occupancy Screenshot](lab3-nvvp-occupancy.png)
  
 This table is showing us that the GPU *streaming multiprocessor (SM)* can
 theoretically run 64 *warps* (groups of 32 threads), but only has 16 to run.
