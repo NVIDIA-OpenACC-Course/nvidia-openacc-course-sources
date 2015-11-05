@@ -16,8 +16,8 @@ PROGRAM laplace2d
     USE openacc
     !TODO: Use mpi
     IMPLICIT NONE
-    INTEGER, PARAMETER :: n = 2048
-    INTEGER, PARAMETER :: m = 2048
+    INTEGER, PARAMETER :: n = 4096
+    INTEGER, PARAMETER :: m = 4096
     INTEGER, PARAMETER :: iter_max = 1000
     REAL, PARAMETER :: tol = 1.0E-5
     REAL, PARAMETER :: pi = 2.0*ASIN(1.0)
