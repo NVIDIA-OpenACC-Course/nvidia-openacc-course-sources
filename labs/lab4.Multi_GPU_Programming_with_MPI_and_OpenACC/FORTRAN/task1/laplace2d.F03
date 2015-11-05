@@ -15,7 +15,6 @@
 PROGRAM laplace2d
     USE openacc
     !TODO: Use mpi
-    USE mpi
     IMPLICIT NONE
     INTEGER, PARAMETER :: n = 2048
     INTEGER, PARAMETER :: m = 2048
@@ -31,9 +30,9 @@ PROGRAM laplace2d
     mpi_size = 1
     
     !TODO: Initialize MPI and determine rank and size
-    CALL MPI_Init(ierror)
-    CALL MPI_Comm_rank(MPI_COMM_WORLD,mpi_rank,ierror);
-    CALL MPI_Comm_size(MPI_COMM_WORLD,mpi_size,ierror);
+    !MPI_INIT(IERROR)
+    !MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERROR)
+    !MPI_COMM_SIZE(MPI_COMM_WORLD, SIZE, IERROR)
     
     a = 0.0
     a_ref = 0.0
@@ -49,7 +48,7 @@ PROGRAM laplace2d
 #if _OPENACC
     ngpus=acc_get_num_devices( acc_device_nvidia )
     !TODO: choose device to use by this rank
-    devicenum = MOD( mpi_rank, ngpus )
+    devicenum = 0
     call acc_set_device_num( devicenum, acc_device_nvidia )
     !Call acc_init after acc_set_device_num to avoid multiple contexts on device 0 in multi GPU systems
     call acc_init( acc_device_nvidia )
@@ -68,7 +67,7 @@ PROGRAM laplace2d
     runtime_serial = finish-start
     
     !TODO: Wait for all processes to ensure correct timing of the parallel version
-    CALL MPI_Barrier( MPI_COMM_WORLD, ierror )
+    !MPI_BARRIER(MPI_COMM_WORLD, IERROR)
     
     IF ( mpi_rank == 0 ) THEN
         WRITE(*,*) 'Parallel execution.'
@@ -97,6 +96,7 @@ PROGRAM laplace2d
         END DO
         !$acc end kernels
         
+        !Periodic boundary conditions
         !$acc kernels
         DO i = 2, n-1
             a(i,1) = a(i,m-1)
@@ -112,7 +112,7 @@ PROGRAM laplace2d
     END DO
     !$acc end data
     !TODO: Wait for all processes to ensure correct timing of the parallel version
-    CALL MPI_Barrier( MPI_COMM_WORLD, ierror )
+    !MPI_BARRIER(MPI_COMM_WORLD, IERROR)
     CALL cpu_time(finish)
     runtime = finish-start
     
@@ -123,5 +123,5 @@ PROGRAM laplace2d
         END IF
     END IF
     !TODO: Finalize MPI
-    CALL MPI_Finalize(ierror)
+    !MPI_FINALIZE(IERROR)
 END PROGRAM laplace2d

@@ -53,10 +53,16 @@ PROGRAM laplace2d
     !Call acc_init after acc_set_device_num to avoid multiple contexts on device 0 in multi GPU systems
     call acc_init( acc_device_nvidia )
 #endif
-    !TODO: set first and last row to be processed by this rank.
-    jstart = 2
-    jend = m-1
+    !set first and last row to be processed by this rank.
+    !Ensure correctness if m%size != 0
+    chunk_size = CEILING( (1.0*m)/mpi_size )
+    jstart = mpi_rank * chunk_size
+    jend = jstart + chunk_size - 1
     
+    !Do not process boundaries
+    jstart = MAX( jstart, 2 )
+    jend = MIN( jend, M-1 )
+
     IF ( mpi_rank == 0 ) THEN
         WRITE(*,"('Jacobi relaxation Calculation: ',I4,' x ',I4,' mesh')") n,m
         WRITE(*,*) 'Calculate reference solution and time serial execution.'
@@ -87,8 +93,10 @@ PROGRAM laplace2d
             END DO
         END DO
         !$acc end kernels
-        !TODO: Calculate global error across all ranks
-        !MPI_ALLREDUCE(SENDBUF, RECVBUF, COUNT, DATATYPE, OP, COMM, IERROR)
+        !Calculate global error across all ranks
+        globalerror = 0.0;
+        call MPI_Allreduce( error, globalerror, 1, MPI_REAL, MPI_MAX, MPI_COMM_WORLD, ierror );
+        error = globalerror;
         
         !$acc kernels
         DO j = jstart, jend
@@ -98,14 +106,7 @@ PROGRAM laplace2d
         END DO
         !$acc end kernels
         
-        !TODO: Handle periodic boundary conditions and halo exchange with MPI
-        !$acc kernels
-        DO i = 2, n-1
-            a(i,1) = a(i,m-1)
-            a(i,m) = a(i,2)
-        END DO
-        !$acc end kernels
-        
+        !Handle periodic boundary conditions and halo exchange with MPI
         top = mpi_rank-1
         IF ( mpi_rank == 0 ) THEN
             top = mpi_size-1
@@ -116,11 +117,11 @@ PROGRAM laplace2d
         END IF
         
         !$acc host_data use_device( A )
-            !TODO: 1. Sent row jstart (first modified row) to top receive lower boundary (jend+1) from bottom
-            !MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
+            !1. Sent row jstart (first modified row) to top receive lower boundary (jend+1) from bottom
+            CALL MPI_Sendrecv( a(1,jstart), n, MPI_REAL, top   , 0, a(1,jend+1), n, MPI_REAL, bottom, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierror )
 
-            !TODO: 2. Sent row jend (last modified row) to bottom receive upper boundary (jstart-1) from top
-            !MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
+            !2. Sent row jend (last modified row) to bottom receive upper boundary (jstart-1) from top
+            CALL MPI_Sendrecv( a(1,jend), n, MPI_REAL, bottom, 0, a(1,(jstart-1)), n, MPI_REAL, top   , 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE, ierror )
         !$acc end host_data
         
         IF ( mpi_rank == 0 .AND. ( iter == 1 .OR. MOD( iter, 100 ) == 0 ) ) THEN

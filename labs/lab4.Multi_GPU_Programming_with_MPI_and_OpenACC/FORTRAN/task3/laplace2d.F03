@@ -16,8 +16,8 @@ PROGRAM laplace2d
     USE openacc
     USE mpi
     IMPLICIT NONE
-    INTEGER, PARAMETER :: n = 4096
-    INTEGER, PARAMETER :: m = 4096
+    INTEGER, PARAMETER :: n = 2048
+    INTEGER, PARAMETER :: m = 2048
     INTEGER, PARAMETER :: iter_max = 1000
     REAL, PARAMETER :: tol = 1.0E-5
     REAL, PARAMETER :: pi = 2.0*ASIN(1.0)
@@ -29,6 +29,7 @@ PROGRAM laplace2d
     mpi_rank = 0
     mpi_size = 1
     
+    !Initialize MPI and determine rank and size
     CALL MPI_Init(ierror)
     CALL MPI_Comm_rank(MPI_COMM_WORLD,mpi_rank,ierror);
     CALL MPI_Comm_size(MPI_COMM_WORLD,mpi_size,ierror);
@@ -46,13 +47,14 @@ PROGRAM laplace2d
     
 #if _OPENACC
     ngpus=acc_get_num_devices( acc_device_nvidia )
+    !choose device to use by this rank
     devicenum = MOD( mpi_rank, ngpus )
     call acc_set_device_num( devicenum, acc_device_nvidia )
     !Call acc_init after acc_set_device_num to avoid multiple contexts on device 0 in multi GPU systems
     call acc_init( acc_device_nvidia )
 #endif
     !set first and last row to be processed by this rank.
-    ! Ensure correctness if m%size != 0
+    !Ensure correctness if m%size != 0
     chunk_size = CEILING( (1.0*m)/mpi_size )
     jstart = mpi_rank * chunk_size
     jend = jstart + chunk_size - 1
@@ -91,31 +93,22 @@ PROGRAM laplace2d
             END DO
         END DO
         !$acc end kernels
-        
         !Calculate global error across all ranks
         globalerror = 0.0;
         call MPI_Allreduce( error, globalerror, 1, MPI_REAL, MPI_MAX, MPI_COMM_WORLD, ierror );
         error = globalerror;
         
-        !TODO: Split into halo and bulk part 
+        !TODO: Split into halo and bulk part
         !$acc kernels
-        DO i = 2, n-1
-            a(i,jstart) = a_new(i,jstart)
-            a(i,jend) = a_new(i,jend)
-        END DO
-        !$acc end kernels
-        
-        !TODO: Start bulk part asynchronously
-        !$acc kernels async
-        DO j = jstart+1, jend-1
+        DO j = jstart, jend
             DO i = 2, n-1
                 a(i,j) = a_new(i,j)
             END DO
         END DO
         !$acc end kernels
+        !TODO: Start bulk part asynchronously
         
-        !TODO: Handle periodic boundary conditions and halo exchange with MPI
-        !Periodic boundary conditions
+        !Handle periodic boundary conditions and halo exchange with MPI
         top = mpi_rank-1
         IF ( mpi_rank == 0 ) THEN
             top = mpi_size-1
@@ -134,7 +127,7 @@ PROGRAM laplace2d
         !$acc end host_data
         
         !TODO: wait for bulk part
-        !$acc wait
+        
         IF ( mpi_rank == 0 .AND. ( iter == 1 .OR. MOD( iter, 100 ) == 0 ) ) THEN
             WRITE(*,"('  ',I4,' ',F8.6)") iter, error
         END IF
