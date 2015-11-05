@@ -8,7 +8,7 @@ clean:
 
 run: laplace2d
 	#TODO: Start with MPI run
-	mpirun -np 4 ./laplace2d
+	./laplace2d
 
 profile: laplace2d
 	mpirun -np 4 nvprof -o laplace2d.%q{OMPI_COMM_WORLD_RANK}.nvvp ./laplace2d

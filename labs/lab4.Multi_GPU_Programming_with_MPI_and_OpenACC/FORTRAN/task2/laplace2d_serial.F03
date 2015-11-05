@@ -61,7 +61,7 @@ LOGICAL FUNCTION check_results( mpi_rank, jstart, jend, n, m, tol, a, a_ref )
     REAL, INTENT(IN) :: tol
     REAL, DIMENSION(n,m), INTENT(IN) :: a, a_ref
     INTEGER :: i,j,ierror
-    LOGICAL :: no_errors, global_no_errors
+    LOGICAL :: no_errors, global_no_errors, mpi_is_initialized
     no_errors = .TRUE.
     j = jstart
     i = 1
@@ -75,8 +75,12 @@ LOGICAL FUNCTION check_results( mpi_rank, jstart, jend, n, m, tol, a, a_ref )
         END DO
         j = j + 1
     END DO
-    global_no_errors = .FALSE.
-    CALL MPI_ALLREDUCE(no_errors, global_no_errors, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierror)
-    no_errors = global_no_errors;
+    
+    CALL MPI_Initialized(mpi_is_initialized, ierror)
+    IF ( mpi_is_initialized ) THEN
+        global_no_errors = .FALSE.
+        CALL MPI_ALLREDUCE(no_errors, global_no_errors, 1, MPI_LOGICAL, MPI_LAND, MPI_COMM_WORLD, ierror)
+        no_errors = global_no_errors
+    END IF
     check_results = no_errors
 END FUNCTION check_results
