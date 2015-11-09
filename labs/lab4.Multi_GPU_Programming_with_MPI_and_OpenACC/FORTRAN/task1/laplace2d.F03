@@ -30,9 +30,9 @@ PROGRAM laplace2d
     mpi_size = 1
     
     !TODO: Initialize MPI and determine rank and size
-    !MPI_INIT(IERROR)
-    !MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERROR)
-    !MPI_COMM_SIZE(MPI_COMM_WORLD, SIZE, IERROR)
+    !call MPI_INIT(IERROR)
+    !call MPI_COMM_RANK(MPI_COMM_WORLD, RANK, IERROR)
+    !call MPI_COMM_SIZE(MPI_COMM_WORLD, SIZE, IERROR)
     
     a = 0.0
     a_ref = 0.0
@@ -67,7 +67,7 @@ PROGRAM laplace2d
     runtime_serial = finish-start
     
     !TODO: Wait for all processes to ensure correct timing of the parallel version
-    !MPI_BARRIER(MPI_COMM_WORLD, IERROR)
+    !call MPI_BARRIER(MPI_COMM_WORLD, IERROR)
     
     IF ( mpi_rank == 0 ) THEN
         WRITE(*,*) 'Parallel execution.'
@@ -112,7 +112,7 @@ PROGRAM laplace2d
     END DO
     !$acc end data
     !TODO: Wait for all processes to ensure correct timing of the parallel version
-    !MPI_BARRIER(MPI_COMM_WORLD, IERROR)
+    !call MPI_BARRIER(MPI_COMM_WORLD, IERROR)
     CALL cpu_time(finish)
     runtime = finish-start
     
@@ -123,5 +123,5 @@ PROGRAM laplace2d
         END IF
     END IF
     !TODO: Finalize MPI
-    !MPI_FINALIZE(IERROR)
+    !call MPI_FINALIZE(IERROR)
 END PROGRAM laplace2d

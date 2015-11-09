@@ -88,7 +88,7 @@ PROGRAM laplace2d
         END DO
         !$acc end kernels
         !TODO: Calculate global error across all ranks
-        !MPI_ALLREDUCE(SENDBUF, RECVBUF, COUNT, DATATYPE, OP, COMM, IERROR)
+        !call MPI_ALLREDUCE(SENDBUF, RECVBUF, COUNT, DATATYPE, OP, COMM, IERROR)
         
         !$acc kernels
         DO j = jstart, jend
@@ -117,10 +117,10 @@ PROGRAM laplace2d
         
         !$acc host_data use_device( A )
             !TODO: 1. Sent row jstart (first modified row) to top receive lower boundary (jend+1) from bottom
-            !MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
+            !call MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
 
             !TODO: 2. Sent row jend (last modified row) to bottom receive upper boundary (jstart-1) from top
-            !MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
+            !call MPI_SENDRECV(SENDBUF, SENDCOUNT, SENDTYPE, DEST, SENDTAG, RECVBUF, RECVCOUNT, RECVTYPE, SOURCE, RECVTAG, MPI_COMM_WORLD, MPI_STATUS_IGNORE, IERROR)
         !$acc end host_data
         
         IF ( mpi_rank == 0 .AND. ( iter == 1 .OR. MOD( iter, 100 ) == 0 ) ) THEN
