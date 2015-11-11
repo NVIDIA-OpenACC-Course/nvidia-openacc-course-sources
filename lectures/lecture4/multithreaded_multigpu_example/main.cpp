@@ -80,13 +80,13 @@ int main() {
     for(unsigned int batch=0;batch<NUM_BATCHES;batch++) {
       unsigned int ystart=batch*BATCH_SIZE;
       unsigned int yend=ystart+BATCH_SIZE;
-      #pragma acc parallel loop collapse(2) present(image) async(batch%3+1)
+      #pragma acc parallel loop collapse(2) present(image) async(queue)
       for(unsigned int y=ystart;y<yend;y++) {
         for(unsigned int x=0;x<WIDTH;x++) {
           image[y*WIDTH+x]=mandelbrot(x,y);
         }
       }
-      #pragma acc update host(image[batch*BATCH_SIZE*WIDTH:WIDTH*BATCH_SIZE]) async(batch%3+1)
+      #pragma acc update host(image[batch*BATCH_SIZE*WIDTH:WIDTH*BATCH_SIZE]) async(queue)
       //
       // Ensure we alternate queues on the device, regardless of the number of
       // devices or loop schedule. Avoiding the "0" queue, which may be special
