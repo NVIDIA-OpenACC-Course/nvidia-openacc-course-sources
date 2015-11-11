@@ -11,7 +11,7 @@ struct matrix {
 };
 
 
-void allocate_3d_poission_matrix(matrix &A, int N) {
+void allocate_3d_poisson_matrix(matrix &A, int N) {
   int num_rows=(N+1)*(N+1)*(N+1);
   int nnz=27*num_rows;
   A.num_rows=num_rows;

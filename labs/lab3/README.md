@@ -140,7 +140,7 @@ directives, as discussed in the lecture. Since this program has clear routines
 for allocating and initializing the data structures and also deallocating,
 we'll use the unstructured directives to make the code easy to understand.
 
-The `allocate_3d_poission_matrix` in matrix.F90 handles allocating and
+The `allocate_3d_poisson_matrix` in matrix.F90 handles allocating and
 initializing the primary array. At the end of this routine, add the following
 directive for copying the three arrays in the matrix type to the device.
 
@@ -197,7 +197,7 @@ Step 2 - Optimize Loops - Vector Length
 
 Now that we're running on the GPU and getting correct answers , let's apply our
 knowledge of the code to help the compiler make better decisions about how to
-parallelize our loops. We know from the `allocate_3d_poission_matrix` routine
+parallelize our loops. We know from the `allocate_3d_poisson_matrix` routine
 that the most non-zero elements we'll have per row is 27. By examining the
 compiler output, as shown below, we know that the compiler chose a vector
 length of 128 for the `matvec` loops. This means that with the

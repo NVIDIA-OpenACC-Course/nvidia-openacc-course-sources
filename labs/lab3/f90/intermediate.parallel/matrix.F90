@@ -8,10 +8,10 @@ module matrix_mod
     integer, pointer :: cols(:)
     real(8), pointer :: coefs(:)
   end type matrix
-  public :: allocate_3d_poission_matrix, free_matrix
+  public :: allocate_3d_poisson_matrix, free_matrix
   public :: matvec
   contains
-  subroutine allocate_3d_poission_matrix(a, n)
+  subroutine allocate_3d_poisson_matrix(a, n)
     implicit none
     type(matrix) :: a
     integer      :: n, num_rows, nnz, offsets(27), &
@@ -68,7 +68,7 @@ module matrix_mod
     
     !$acc enter data copyin(arow_offsets,acols,acoefs)
 
-    end subroutine allocate_3d_poission_matrix
+    end subroutine allocate_3d_poisson_matrix
   
   subroutine free_matrix(a)
     implicit none

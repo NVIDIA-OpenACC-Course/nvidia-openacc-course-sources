@@ -72,7 +72,7 @@ acceleration. Run the command below to gather a CPU profile.
     | 81.12% matvec(matrix const &, vector const &, vector const &)
     | 11.53% waxpby(double, vector const &, double, vector const &, vector const &)
     | 4.55% dot(vector const &, vector const &)
-    | 2.65% allocate_3d_poission_matrix(matrix&, int)
+    | 2.65% allocate_3d_poisson_matrix(matrix&, int)
     | 0.03% free_matrix(matrix&)
     |   0.03% munmap
     0.13% __c_mset8
@@ -83,7 +83,7 @@ We see from the above output that the `matvec`, `waxpy`, and `dot` routines
 take up the majority of the runtime of this application. We will focus our
 effort on accelerating these functions.
 
-***NOTE:*** The `allocate_3d_poission_matrix` routine is an initialization
+***NOTE:*** The `allocate_3d_poisson_matrix` routine is an initialization
 routine that can be safely ignored.
 
 Step 2 - Express Parallelism
