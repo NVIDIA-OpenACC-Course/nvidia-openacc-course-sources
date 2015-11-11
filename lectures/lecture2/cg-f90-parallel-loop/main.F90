@@ -12,7 +12,7 @@ program main
   real(8)              :: normr, rtrans, oldtrans, p_ap_dot, alpha, beta
   integer              :: iter
 
-  call allocate_3d_poission_matrix(a,n)
+  call allocate_3d_poisson_matrix(a,n)
 
   print *, "Rows:",a%num_rows,"nnz:",a%nnz
 
