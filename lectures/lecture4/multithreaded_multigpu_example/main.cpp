@@ -21,10 +21,15 @@ int main() {
   FILE *fp=fopen("image.pgm","wb");
   fprintf(fp,"P5\n%s\n%d %d\n%d\n","#comment",WIDTH,HEIGHT,MAX_COLOR);
 
+  // The number of batches may need to be adjusted along with the number of
+  // devices to get the best results.
   unsigned int NUM_BATCHES=64;
   unsigned int BATCH_SIZE=HEIGHT/NUM_BATCHES;
-  int num_gpus, max_gpus = acc_get_num_devices(acc_device_nvidia);
+  int queue, num_gpus, max_gpus = acc_get_num_devices(acc_device_nvidia);
 
+  // NOTE: This region is to workaround timing irregularities due to the short
+  // runtime of this example. In a real application, the overhead that this
+  // region absorbs will be negligible.
 #pragma omp parallel
   {
     num_gpus = omp_get_num_threads();
@@ -38,15 +43,15 @@ int main() {
       }
     }
 
-    // Should set the device for all interactions from this thread
+    // Sets the device for all interactions from this thread
     acc_set_device_num(my_gpu, acc_device_nvidia);
+    acc_init(acc_device_nvidia);
 #pragma acc parallel num_gangs(1)
     {
       my_gpu++; // Do nothing, just to try warming up the device.
     }
   }
 
-  acc_init(acc_device_nvidia);
   start=omp_get_wtime();
 #pragma omp parallel
   {
@@ -61,15 +66,17 @@ int main() {
       }
     }
 
-    // Should set the device for all interactions from this thread
+    // Sets the device for all interactions from this thread
     acc_set_device_num(my_gpu, acc_device_nvidia);
 
     #pragma acc data create(image[0:HEIGHT*WIDTH])
     {
+      queue = 1;
 // Let OpenMP distribute the blocks to different threads. Because of the
 // inherent load imbalance in this code, it will likely be necessary to tweak
-// the schedule.      
-#pragma omp for schedule(static,1)
+// the schedule. A static, interleaved schedule is shown here to avoid uneven
+// work distribution for more than 2 devices.
+#pragma omp for schedule(static,1) firstprivate(queue)
     for(unsigned int batch=0;batch<NUM_BATCHES;batch++) {
       unsigned int ystart=batch*BATCH_SIZE;
       unsigned int yend=ystart+BATCH_SIZE;
@@ -80,6 +87,11 @@ int main() {
         }
       }
       #pragma acc update host(image[batch*BATCH_SIZE*WIDTH:WIDTH*BATCH_SIZE]) async(batch%3+1)
+      //
+      // Ensure we alternate queues on the device, regardless of the number of
+      // devices or loop schedule. Avoiding the "0" queue, which may be special
+      // on some devices.
+      queue = queue%2 + 1;
     }
 
     // Wait for all work to complete
