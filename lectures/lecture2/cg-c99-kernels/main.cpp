@@ -20,7 +20,7 @@ int main() {
   int iter=0;
 
   //create matrix
-  allocate_3d_poission_matrix(A,N);
+  allocate_3d_poisson_matrix(A,N);
     
   printf("Rows: %d, nnz: %d\n", A.num_rows, A.row_offsets[A.num_rows]);
 
