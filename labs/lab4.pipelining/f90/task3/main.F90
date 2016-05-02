@@ -16,7 +16,7 @@ call cpu_time(startt)
 !$acc data create(image)
 do block=0,(num_blocks-1)
   starty = block  * (WIDTH/NUM_BLOCKS) + 1
-  endy   = min(starty + (WIDTH/NUM_BLOCKS), WIDTH)
+  endy   = min(starty + (WIDTH/NUM_BLOCKS) - 1, WIDTH)
   !$acc parallel loop
   do iy=starty,endy
     do ix=1,HEIGHT
