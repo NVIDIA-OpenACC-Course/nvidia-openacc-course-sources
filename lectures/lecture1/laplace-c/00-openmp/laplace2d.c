@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     {
         error = 0.0;
 
-#pragma omp parallel for shared(m, n, Anew, A)
+#pragma omp parallel for shared(m, n, Anew, A) reduction(max:error)
         for( int j = 1; j < n-1; j++)
         {
             for( int i = 1; i < m-1; i++ )
