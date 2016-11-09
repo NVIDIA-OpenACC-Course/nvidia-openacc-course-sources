@@ -16,7 +16,7 @@ module matrix_mod
     type(matrix) :: a
     integer      :: n, num_rows, nnz, offsets(27), &
                     zstride, ystride, idx,         &
-                    i, j, x, y, z
+                    i, j, x, y, z, num
     real(8)      :: coefs(27)
     integer, pointer :: arow_offsets(:),acols(:)
     real(8), pointer :: acoefs(:)
@@ -54,9 +54,9 @@ module matrix_mod
     do i=1,num_rows
       arow_offsets(i) = idx
       do j=1,27
-        n=i+offsets(j)
-        if ((n.ge.1).and.(n.le.num_rows)) then
-          a%cols(idx) = n
+        num=i+offsets(j)
+        if ((num.ge.1).and.(num.le.num_rows)) then
+          a%cols(idx) = num
           a%coefs(idx) = coefs(j)
           idx = idx + 1
         endif
