@@ -9,3 +9,5 @@ laplace
 *.out
 *.pgm
 *.png
+*.x
+*.jpg
