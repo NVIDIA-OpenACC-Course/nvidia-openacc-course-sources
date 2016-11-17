@@ -37,6 +37,7 @@ void blur5(unsigned char*,unsigned char*,long,long,long,long);
 void blur5_blocked(unsigned char*,unsigned char*,long,long,long,long);
 void blur5_update(unsigned char*,unsigned char*,long,long,long,long);
 void blur5_pipelined(unsigned char*,unsigned char*,long,long,long,long);
+void blur5_pipelined_multi(unsigned char*,unsigned char*,long,long,long,long);
 }
 
 int main(int argc, char* argv[])
@@ -62,6 +63,7 @@ int main(int argc, char* argv[])
   // Pre-allocate device and queues for timing
   blur5(data,out,width,height, ch, ws);
   blur5_pipelined(data,out,width,height, ch, ws);
+  blur5_pipelined_multi(data,out,width,height, ch, ws);
   bzero(out,sz);
 
   double st = omp_get_wtime();
@@ -86,6 +88,11 @@ int main(int argc, char* argv[])
   blur5_pipelined(data,out,width,height, ch, ws);
   et = omp_get_wtime();
   printf("Time (pipelined): %lf seconds\n", (et-st));
+
+  st = omp_get_wtime();
+  blur5_pipelined_multi(data,out,width,height, ch, ws);
+  et = omp_get_wtime();
+  printf("Time (multi): %lf seconds\n", (et-st));
   memcpy(img->imageData,out,width*height*ch);
 
   if(!cvSaveImage(argv[2],img))
