@@ -72,7 +72,7 @@ tolerance value will be incorrect with the managed memory option removed.
 We can correct both of these problems by explicitly declaring the data movement
 for the arrays that we need on the GPU. In the associated lecture we discussed
 the OpenACC structured `data` directive and the unstructured `enter data` and
-`exit data` directives. Either approaced can be used to express the data
+`exit data` directives. Either approach can be used to express the data
 locality in this code, but the unstructured directives are probably cleaner to
 use.
 
